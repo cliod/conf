@@ -4,26 +4,46 @@ import (
 	"errors"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"net/http"
 	"reflect"
 	"strings"
-	"unicode"
 )
 
 type Yaml struct {
-	Store
 	data map[interface{}]interface{}
 }
 
+// Keys returns root keys
+func (y *Yaml) Keys() (keys []string) {
+	for key := range y.data {
+		var vKey = &Value{key}
+		keys = append(keys, vKey.String())
+	}
+	return
+}
+
 func (y *Yaml) Load(filename string) error {
-	bs, err := ioutil.ReadFile(filename)
+	var (
+		bs  []byte
+		err error
+	)
+	if strings.HasPrefix(strings.ToLower(filename), "http") {
+		var resp *http.Response
+		resp, err = http.Get(filename)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		bs, err = ioutil.ReadAll(resp.Body)
+	} else {
+		bs, err = ioutil.ReadFile(filename)
+	}
 	if err != nil {
 		return err
 	}
-	m := make(map[interface{}]interface{})
-	err = yaml.Unmarshal(bs, &m)
+	y.data = make(map[interface{}]interface{})
+	err = yaml.Unmarshal(bs, &y.data)
 	eLog(err)
-	y.data = m
-	y.StoreVariable = y
 	return err
 }
 
@@ -39,7 +59,7 @@ func (y *Yaml) Value(name string) Variable {
 			break
 		}
 		if (index + 1) == len(subKeys) {
-			return &Value{value}
+			return newVal(value)
 		}
 		if reflect.TypeOf(value).Kind() == reflect.Map {
 			data = value.(map[interface{}]interface{})
@@ -48,22 +68,57 @@ func (y *Yaml) Value(name string) Variable {
 	return nil
 }
 
+func (y *Yaml) GetValue(name string) interface{} {
+	return y.Value(name).Value()
+}
+
+func (y *Yaml) GetString(name string) string {
+	return y.Value(name).String()
+}
+
+func (y *Yaml) GetFloat(name string) float64 {
+	return y.Value(name).Float()
+}
+
+func (y *Yaml) GetInt(name string) int {
+	return y.Value(name).Int()
+}
+
+func (y *Yaml) GetBool(name string) bool {
+	return y.Value(name).Bool()
+}
+
 func (y *Yaml) Struct(name string, receiver interface{}) {
 	value := y.GetValue(name)
-	switch value.(type) {
+	switch val := value.(type) {
 	case string:
 		err := y.setField(receiver, name, value)
 		wLog(err)
 	case map[interface{}]interface{}:
-		y.mapToStruct(value.(map[interface{}]interface{}), receiver)
+		y.mapToStruct(val, receiver)
 	}
+}
+
+func (y *Yaml) Convert(converter Converter) KindVariable {
+	return converter.Convert(y)
+}
+
+func (y *Yaml) Props() *Props {
+	return y.Convert(Y2P).(*Props)
+}
+
+func (y *Yaml) Json() *Json {
+	return y.Convert(Y2J).(*Json)
 }
 
 func (y *Yaml) mapToStruct(m map[interface{}]interface{}, receiver interface{}) interface{} {
 	for key, value := range m {
-		switch key.(type) {
+		switch k := key.(type) {
 		case string:
-			err := y.setField(receiver, key.(string), value)
+			err := y.setField(receiver, k, value)
+			wLog(err)
+		default:
+			err := y.setField(receiver, newVal(k).String(), value)
 			wLog(err)
 		}
 	}
@@ -71,45 +126,20 @@ func (y *Yaml) mapToStruct(m map[interface{}]interface{}, receiver interface{}) 
 }
 
 func (y *Yaml) setField(receiver interface{}, name string, value interface{}) error {
-
-	for i, v := range name {
-		name = string(unicode.ToUpper(v)) + name[i+1:]
-		break
-	}
-
-	structValue := reflect.Indirect(reflect.ValueOf(receiver))
-	structFieldValue := structValue.FieldByName(name)
-
-	if !structFieldValue.IsValid() {
-		return errors.New("no such field: " + name)
-	}
-
-	if !structFieldValue.CanSet() {
-		return errors.New("can not set field value: " + name)
-	}
-
-	structFieldType := structFieldValue.Type()
-	val := reflect.ValueOf(value)
-
-	if structFieldType.Kind() == reflect.Struct && val.Kind() == reflect.Map {
-		vint := val.Interface()
-		switch vint.(type) {
-		case map[interface{}]interface{}:
-			for k, v := range vint.(map[interface{}]interface{}) {
-				err := y.setField(structFieldValue.Addr().Interface(), k.(string), v)
-				wLog(err)
-			}
-		case map[string]interface{}:
-			for k, v := range vint.(map[string]interface{}) {
-				err := y.setField(structFieldValue.Addr().Interface(), k, v)
-				wLog(err)
-			}
+	ref := reflect.TypeOf(receiver)
+	if ref.Elem().Kind() == reflect.Map {
+		m, ok := receiver.(*map[interface{}]interface{})
+		if ok {
+			(*m)[name] = value
+			return nil
 		}
+		m1, ok := receiver.(*map[string]interface{})
+		if ok {
+			(*m1)[name] = value
+			return nil
+		}
+		return errors.New("the receiver has type error")
 	} else {
-		if structFieldType != val.Type() {
-			return errors.New("provided value type didn't match field type")
-		}
-		structFieldValue.Set(val)
+		return SetFieldValue(receiver, name, value)
 	}
-	return nil
 }

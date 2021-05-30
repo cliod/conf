@@ -11,7 +11,7 @@ import (
 type CType int
 
 func (t CType) String() string {
-	name, ok := CTypeNames[t]
+	name, ok := CTypeNames[int(t)]
 	if ok {
 		return fmt.Sprint(name)
 	}
@@ -65,7 +65,7 @@ func New(params ...string) *Config {
 	if len(params) > 2 {
 		ct, ok := CTypeNames[params[2]]
 		if ok {
-			cType = ct.(CType)
+			cType = CType(ct.(int))
 		}
 	}
 	if strings.Trim(confDir, " ") == "" || confDir[0] != '/' || confDir[1] != ':' {

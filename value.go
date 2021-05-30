@@ -20,6 +20,10 @@ type Value struct {
 	value interface{}
 }
 
+func newVal(value interface{}) *Value {
+	return &Value{value}
+}
+
 func (v *Value) Value() interface{} {
 	return v.value
 }

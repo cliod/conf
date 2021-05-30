@@ -1,0 +1,11 @@
+{
+  "app": {
+    "name": "conf",
+    "version": 1,
+    "author": "cliod",
+    "default:": {
+      "name": "yaml",
+      "type": 0
+    }
+  }
+}
