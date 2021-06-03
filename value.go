@@ -135,23 +135,48 @@ func (v *Value) parseBool(val string) (bool, error) {
 }
 
 func (v *Value) Struct(receiver interface{}) {
-	value := v.value
-	switch val := value.(type) {
+	switch val := v.value.(type) {
 	case string:
 		err := json.Unmarshal([]byte(val), receiver)
 		wLog(err)
 	case map[interface{}]interface{}:
 		switch receiver.(type) {
 		case *map[string]string:
-			for key, va := range val {
-				(*receiver.(*map[string]string))[newVal(key).String()] = newVal(va).String()
+			for key, value := range val {
+				(*receiver.(*map[string]string))[newVal(key).String()] = newVal(value).String()
 			}
 		case *map[string]interface{}:
-			for key, va := range val {
-				(*receiver.(*map[string]interface{}))[newVal(key).String()] = va
-			}
+			v.mapToBMap(val, receiver.(*map[string]interface{}))
 		default:
 			v.mapToStruct(val, receiver)
+		}
+	case map[string]interface{}:
+		switch receiver.(type) {
+		case *map[string]string:
+			for key, value := range val {
+				(*receiver.(*map[string]string))[newVal(key).String()] = newVal(value).String()
+			}
+		case *map[string]interface{}:
+			for key, value := range val {
+				(*receiver.(*map[string]interface{}))[newVal(key).String()] = value
+			}
+		default:
+			for key, value := range val {
+				err := SetFieldValue(receiver, key, value)
+				wLog(err)
+			}
+		}
+	}
+}
+
+func (v *Value) mapToBMap(val map[interface{}]interface{}, receiver *map[string]interface{}) {
+	for key, value := range val {
+		if sv, ok := value.(map[interface{}]interface{}); ok {
+			m := make(map[string]interface{})
+			v.mapToBMap(sv, &m)
+			(*receiver)[newVal(key).String()] = m
+		} else {
+			(*receiver)[newVal(key).String()] = value
 		}
 	}
 }

@@ -12,6 +12,18 @@ type Json struct {
 	data map[string]interface{}
 }
 
+// Keys returns root keys
+func (j *Json) Keys() (keys []string) {
+	for key := range j.data {
+		keys = append(keys, key)
+	}
+	return
+}
+
+func (j *Json) Variable() Variable {
+	return newVal(j.data)
+}
+
 func (j *Json) Load(filename string) error {
 	var (
 		bs  []byte
@@ -90,8 +102,21 @@ func (j *Json) GetBool(name string) bool {
 }
 
 func (j *Json) Struct(name string, receiver interface{}) {
-	value := j.GetValue(name)
-	bs, err := json.Marshal(value)
+	value := j.Value(name)
+	switch val := value.Value().(type) {
+	case string, float64, int64, int, bool:
+		if strings.Contains(name, ".") {
+			name = name[strings.LastIndex(name, "."):]
+		}
+		err := SetFieldValue(receiver, name, val)
+		wLog(err)
+	}
+	extVal, ok := value.(ExtVariable)
+	if ok {
+		extVal.Struct(receiver)
+		return
+	}
+	bs, err := json.Marshal(value.Value())
 	if err != nil {
 		eLog(err)
 		return
@@ -105,9 +130,9 @@ func (j *Json) Convert(converter Converter) KindVariable {
 }
 
 func (j *Json) Props() *Props {
-	return j.Convert(J2P).(*Props)
+	return j.Convert(j2p).(*Props)
 }
 
 func (j *Json) Yaml() *Yaml {
-	return j.Convert(J2Y).(*Yaml)
+	return j.Convert(j2y).(*Yaml)
 }

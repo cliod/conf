@@ -24,6 +24,10 @@ func (p *Props) Keys() (keys []string) {
 	return
 }
 
+func (p *Props) Variable() Variable {
+	return newVal(p.props.Map())
+}
+
 func (p *Props) Load(filename string) (err error) {
 	loader := &properties.Loader{Encoding: properties.UTF8}
 	p.props, err = loader.LoadAll([]string{filename})
@@ -55,19 +59,32 @@ func (p *Props) GetBool(name string) bool {
 }
 
 func (p *Props) Struct(name string, receiver interface{}) {
-	props := p.props.FilterPrefix(name)
-	if props.Len() > 0 {
-		for key, value := range props.Map() {
+	var (
+		m = make(map[string]string)
+		j = make(map[string]interface{})
+	)
+	for key, value := range p.props.Map() {
+		if key == name {
+			continue
+		}
+		if strings.HasPrefix(key, name) {
 			key = strings.TrimPrefix(key, name+".")
-			switch receiver.(type) {
-			case *map[string]string:
-				(*receiver.(*map[string]string))[key] = value
-			case *map[string]interface{}:
-				(*receiver.(*map[string]interface{}))[key] = value
-			default:
-				err := p.setField(receiver, key, value)
-				wLog(err)
-			}
+			m[key] = value
+		}
+	}
+	p2j.props2Json(m, j, 0)
+	for key, value := range j {
+		if strings.Contains(key, ".") {
+			continue
+		}
+		switch receiver.(type) {
+		case *map[string]string:
+			(*receiver.(*map[string]string))[key] = newVal(value).String()
+		case *map[string]interface{}:
+			(*receiver.(*map[string]interface{}))[key] = value
+		default:
+			err := p.setField(receiver, key, value)
+			wLog(err)
 		}
 	}
 }
@@ -77,11 +94,11 @@ func (p *Props) Convert(converter Converter) KindVariable {
 }
 
 func (p *Props) Yaml() *Yaml {
-	return p.Convert(P2Y).(*Yaml)
+	return p.Convert(p2y).(*Yaml)
 }
 
 func (p *Props) Json() *Json {
-	return p.Convert(P2J).(*Json)
+	return p.Convert(p2j).(*Json)
 }
 
 func (p *Props) setField(receiver interface{}, name string, value interface{}) error {

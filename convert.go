@@ -5,12 +5,12 @@ import (
 )
 
 var (
-	Y2P *Yaml2PropsConverter
-	Y2J *Yaml2JsonConverter
-	P2Y *Props2YamlConverter
-	P2J *Props2JsonConverter
-	J2Y *Json2YamlConverter
-	J2P *Json2PropsConverter
+	y2p *Yaml2PropsConverter
+	y2j *Yaml2JsonConverter
+	p2y *Props2YamlConverter
+	p2j *Props2JsonConverter
+	j2y *Json2YamlConverter
+	j2p *Json2PropsConverter
 )
 
 type Convertable interface {

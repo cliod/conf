@@ -1,6 +1,7 @@
-package conf
+package conf_test
 
 import (
+	"github.com/cliod/conf"
 	"testing"
 )
 
@@ -11,74 +12,114 @@ type AppInfo struct {
 }
 
 func TestConfig(t *testing.T) {
-	t.Log(GetString("app"))
+	t.Log(conf.GetString("app"))
 
-	t.Log(GetInt("app.version"))
-	t.Log(GetFloat("app.version"))
-	t.Log(GetBool("app.version"))
+	t.Log(conf.GetInt("app.version"))
+	t.Log(conf.GetFloat("app.version"))
+	t.Log(conf.GetBool("app.version"))
 
 	var (
 		info AppInfo
 		m    = make(map[string]interface{})
 	)
-	ToStruct("app", &info)
-	ToStruct("app", &m)
+	conf.ToStruct("app", &info)
+	conf.ToStruct("app", &m)
 	t.Logf("%#v", info)
 	t.Logf("%#v", m)
 
-	props := New("", "app.properties", PROPS.String())
-	val := props.Value("app.version")
-	t.Log(val.String())
-	info = AppInfo{}
-	props.Struct("app", &info)
-	t.Logf("%#v", info)
-
-	json := New("", "app.json", JSON.String())
-	val = json.Value("app.version")
-	t.Log(val.String())
-	info = AppInfo{}
-	json.Struct("app", &info)
-	t.Logf("%#v", info)
 }
 
 func TestValue(t *testing.T) {
-	var converter Converter = new(Yaml2PropsConverter)
-	var variable = converter.Convert(Conf().store)
-	props := variable.(*Props)
+	var converter conf.Converter = new(conf.Yaml2PropsConverter)
+	t.Log(conf.Conf().GetString("app"))
+	var variable = converter.Convert(conf.Conf().Variable())
+	props := variable.(*conf.Props)
 	t.Log("=========== yaml -> props ============")
-	t.Logf("%#v", props.props.Keys())
+	t.Logf("%#v", props.Keys())
 
-	converter = new(Props2YamlConverter)
+	converter = new(conf.Props2YamlConverter)
 	variable = converter.Convert(variable)
-	yaml := variable.(*Yaml)
+	yaml := variable.(*conf.Yaml)
 	t.Log("=========== props -> yaml ============")
-	t.Logf("%#v", yaml.data)
+	t.Logf("%#v", yaml.Variable())
 
-	converter = new(Yaml2JsonConverter)
+	converter = new(conf.Yaml2JsonConverter)
 	variable = converter.Convert(variable)
-	json := variable.(*Json)
+	json := variable.(*conf.Json)
 	t.Log("=========== yaml -> json ============")
-	t.Logf("%#v", json.data)
+	t.Logf("%#v", json.Variable())
 
-	converter = new(Json2YamlConverter)
+	converter = new(conf.Json2YamlConverter)
 	variable = converter.Convert(variable)
-	yaml = variable.(*Yaml)
+	yaml = variable.(*conf.Yaml)
 	t.Log("=========== json -> yaml ============")
-	t.Logf("%#v", yaml.data)
+	t.Logf("%#v", yaml.Variable())
 
-	converter = new(Yaml2PropsConverter)
+	converter = new(conf.Yaml2PropsConverter)
 	variable = converter.Convert(variable)
-	props = variable.(*Props)
+	props = variable.(*conf.Props)
 
-	converter = new(Props2JsonConverter)
+	converter = new(conf.Props2JsonConverter)
 	variable = converter.Convert(variable)
-	json = variable.(*Json)
+	json = variable.(*conf.Json)
 	t.Log("=========== props -> json ============")
-	t.Logf("%#v", json.data)
+	t.Logf("%#v", json.Variable())
 
-	converter = new(Json2PropsConverter)
+	converter = new(conf.Json2PropsConverter)
 	variable = converter.Convert(variable)
-	props = variable.(*Props)
+	props = variable.(*conf.Props)
 	t.Log("=========== json -> props ============")
-	t.Logf("%#v", props.props.Map())
+	t.Logf("%#v", props.Variable())
+}
+
+func TestJson(t *testing.T) {
+	json := conf.New("", "app.json", conf.JSON.String())
+
+	t.Log(json.GetString("app"))
+	t.Log(json.GetInt("app.version"))
+	t.Log(json.GetFloat("app.version"))
+	t.Log(json.GetBool("app.version"))
+
+	info := AppInfo{}
+	m := make(map[string]interface{})
+	json.Struct("app", &info)
+	json.Struct("app", &m)
+	t.Logf("%#v", info)
+	t.Logf("%#v", m)
+}
+
+func TestYaml(t *testing.T) {
+	yaml := conf.New()
+
+	t.Log(yaml.GetString("app"))
+	t.Log(yaml.GetInt("app.version"))
+	t.Log(yaml.GetFloat("app.version"))
+	t.Log(yaml.GetBool("app.version"))
+
+	info := AppInfo{}
+	m := make(map[string]interface{})
+	yaml.Struct("app", &info)
+	yaml.Struct("app", &m)
+	t.Logf("%#v", info)
+	t.Logf("%#v", m)
+
+	info.Version = 2
+	yaml.Struct("app.version", &info)
+	t.Logf("%#v", info)
+}
+
+func TestProps(t *testing.T) {
+	props := conf.New("", "app.properties", conf.PROPS.String())
+
+	t.Log(props.GetString("app"))
+	t.Log(props.GetInt("app.version"))
+	t.Log(props.GetFloat("app.version"))
+	t.Log(props.GetBool("app.version"))
+
+	info := AppInfo{}
+	m := make(map[string]interface{})
+	props.Struct("app", &info)
+	props.Struct("app", &m)
+	t.Logf("%#v", info)
+	t.Logf("%#v", m)
 }

@@ -48,6 +48,8 @@ type Config struct {
 	name   string // name of configuration file, default: app.yaml
 	isInit bool   // is initialized
 	cType  CType  // type of configuration file, default: yaml
+
+	// todo includes, profiles(cover)
 }
 
 func New(params ...string) *Config {
@@ -58,14 +60,14 @@ func New(params ...string) *Config {
 	)
 	if len(params) > 0 {
 		confDir = params[0]
-	}
-	if len(params) > 1 {
-		confName = params[1]
-	}
-	if len(params) > 2 {
-		ct, ok := CTypeNames[params[2]]
-		if ok {
-			cType = CType(ct.(int))
+		if len(params) > 1 {
+			confName = params[1]
+			if len(params) > 2 {
+				ct, ok := CTypeNames[params[2]]
+				if ok {
+					cType = CType(ct.(int))
+				}
+			}
 		}
 	}
 	if strings.Trim(confDir, " ") == "" || confDir[0] != '/' || confDir[1] != ':' {
@@ -105,6 +107,10 @@ func (c *Config) initialize() {
 		}
 		c.isInit = true
 	}
+}
+
+func (c *Config) Variable() StoreVariable {
+	return c.store
 }
 
 // Load supports reload configuration file

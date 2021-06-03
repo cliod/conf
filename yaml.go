@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"encoding/json"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
@@ -19,6 +20,10 @@ func (y *Yaml) Keys() (keys []string) {
 		keys = append(keys, vKey.String())
 	}
 	return
+}
+
+func (y *Yaml) Variable() Variable {
+	return newVal(y.data)
 }
 
 func (y *Yaml) Load(filename string) error {
@@ -99,25 +104,27 @@ func (y *Yaml) GetBool(name string) bool {
 }
 
 func (y *Yaml) Struct(name string, receiver interface{}) {
-	value := y.GetValue(name)
-	switch val := value.(type) {
-	case string:
-		err := y.setField(receiver, name, value)
-		wLog(err)
-	case map[interface{}]interface{}:
-		switch receiver.(type) {
-		case *map[string]string:
-			for key, va := range val {
-				(*receiver.(*map[string]string))[newVal(key).String()] = newVal(va).String()
-			}
-		case *map[string]interface{}:
-			for key, va := range val {
-				(*receiver.(*map[string]interface{}))[newVal(key).String()] = va
-			}
-		default:
-			y.mapToStruct(val, receiver)
+	value := y.Value(name)
+	switch val := value.Value().(type) {
+	case string, float64, int64, int, bool:
+		if strings.Contains(name, ".") {
+			name = name[strings.LastIndex(name, ".")+1:]
 		}
+		err := SetFieldValue(receiver, name, val)
+		wLog(err)
 	}
+	extVal, ok := value.(ExtVariable)
+	if ok {
+		extVal.Struct(receiver)
+		return
+	}
+	bs, err := json.Marshal(value.Value())
+	if err != nil {
+		eLog(err)
+		return
+	}
+	err = json.Unmarshal(bs, receiver)
+	eLog(err)
 }
 
 func (y *Yaml) Convert(converter Converter) KindVariable {
@@ -125,27 +132,9 @@ func (y *Yaml) Convert(converter Converter) KindVariable {
 }
 
 func (y *Yaml) Props() *Props {
-	return y.Convert(Y2P).(*Props)
+	return y.Convert(y2p).(*Props)
 }
 
 func (y *Yaml) Json() *Json {
-	return y.Convert(Y2J).(*Json)
-}
-
-func (y *Yaml) mapToStruct(m map[interface{}]interface{}, receiver interface{}) interface{} {
-	for key, value := range m {
-		switch k := key.(type) {
-		case string:
-			err := y.setField(receiver, k, value)
-			wLog(err)
-		default:
-			err := y.setField(receiver, newVal(k).String(), value)
-			wLog(err)
-		}
-	}
-	return receiver
-}
-
-func (y *Yaml) setField(receiver interface{}, name string, value interface{}) error {
-	return SetFieldValue(receiver, name, value)
+	return y.Convert(y2j).(*Json)
 }
