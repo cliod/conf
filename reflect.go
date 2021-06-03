@@ -2,11 +2,18 @@ package conf
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"unicode"
 )
 
 func SetFieldValue(receiver interface{}, fieldName string, value interface{}, fs ...func(fieldType reflect.Type, value interface{})) error {
+	ref := reflect.TypeOf(receiver)
+	if !(ref.Kind() == reflect.Ptr && ref.Elem().Kind() == reflect.Struct) {
+		err := errors.New("the receiver is not a structure pointer. this type is not supported")
+		eLog(err, ref.Kind().String())
+		return err
+	}
 	for i, v := range fieldName {
 		fieldName = string(unicode.ToUpper(v)) + fieldName[i+1:]
 		break
@@ -25,7 +32,7 @@ func SetFieldValue(receiver interface{}, fieldName string, value interface{}, fs
 		switch nVal := val.Interface().(type) {
 		case map[interface{}]interface{}:
 			for k, v := range nVal {
-				err := SetFieldValue(structFieldValue.Addr().Interface(), newVal(k).String(), v)
+				err := SetFieldValue(structFieldValue.Addr().Interface(), fmt.Sprint(k), v)
 				wLog(err)
 			}
 		case map[string]interface{}:

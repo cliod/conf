@@ -13,7 +13,13 @@ type Variable interface {
 	Float() float64
 	Int() int
 	Bool() bool
+}
+
+type ExtVariable interface {
+	Variable
 	Struct(interface{})
+	Slice() []interface{}
+	Map() map[interface{}]interface{}
 }
 
 type Value struct {
@@ -118,16 +124,6 @@ func (v *Value) Bool() bool {
 	}
 }
 
-func (v *Value) Struct(receiver interface{}) {
-	bs, err := json.Marshal(v.value)
-	if err != nil {
-		eLog(err)
-		return
-	}
-	err = json.Unmarshal(bs, receiver)
-	eLog(err)
-}
-
 func (v *Value) parseBool(val string) (bool, error) {
 	switch val {
 	case "1", "t", "T", "true", "TRUE", "True", "on", "ON", "Y", "y", "YES", "yes", "Yes":
@@ -136,4 +132,48 @@ func (v *Value) parseBool(val string) (bool, error) {
 		return false, nil
 	}
 	return false, &strconv.NumError{Func: "ParseBool", Num: val, Err: strconv.ErrSyntax}
+}
+
+func (v *Value) Struct(receiver interface{}) {
+	value := v.value
+	switch val := value.(type) {
+	case string:
+		err := json.Unmarshal([]byte(val), receiver)
+		wLog(err)
+	case map[interface{}]interface{}:
+		switch receiver.(type) {
+		case *map[string]string:
+			for key, va := range val {
+				(*receiver.(*map[string]string))[newVal(key).String()] = newVal(va).String()
+			}
+		case *map[string]interface{}:
+			for key, va := range val {
+				(*receiver.(*map[string]interface{}))[newVal(key).String()] = va
+			}
+		default:
+			v.mapToStruct(val, receiver)
+		}
+	}
+}
+
+func (v *Value) mapToStruct(m map[interface{}]interface{}, receiver interface{}) interface{} {
+	for key, value := range m {
+		switch k := key.(type) {
+		case string:
+			err := SetFieldValue(receiver, k, value)
+			wLog(err)
+		default:
+			err := SetFieldValue(receiver, newVal(k).String(), value)
+			wLog(err)
+		}
+	}
+	return receiver
+}
+
+func (v *Value) Slice() []interface{} {
+	panic("no impl")
+}
+
+func (v *Value) Map() map[interface{}]interface{} {
+	panic("no impl")
 }

@@ -1,7 +1,6 @@
 package conf
 
 import (
-	"errors"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
@@ -33,7 +32,12 @@ func (y *Yaml) Load(filename string) error {
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		defer func() {
+			err = resp.Body.Close()
+			if err != nil {
+				wLog(err)
+			}
+		}()
 		bs, err = ioutil.ReadAll(resp.Body)
 	} else {
 		bs, err = ioutil.ReadFile(filename)
@@ -48,6 +52,11 @@ func (y *Yaml) Load(filename string) error {
 }
 
 func (y *Yaml) Value(name string) Variable {
+	var val interface{}
+	name = strings.Trim(name, " ")
+	if name == "" {
+		val = y.data
+	}
 	subKeys := strings.Split(name, ".")
 	data := y.data
 	for index, key := range subKeys {
@@ -59,13 +68,14 @@ func (y *Yaml) Value(name string) Variable {
 			break
 		}
 		if (index + 1) == len(subKeys) {
-			return newVal(value)
+			val = value
+			break
 		}
 		if reflect.TypeOf(value).Kind() == reflect.Map {
 			data = value.(map[interface{}]interface{})
 		}
 	}
-	return nil
+	return newVal(val)
 }
 
 func (y *Yaml) GetValue(name string) interface{} {
@@ -95,7 +105,18 @@ func (y *Yaml) Struct(name string, receiver interface{}) {
 		err := y.setField(receiver, name, value)
 		wLog(err)
 	case map[interface{}]interface{}:
-		y.mapToStruct(val, receiver)
+		switch receiver.(type) {
+		case *map[string]string:
+			for key, va := range val {
+				(*receiver.(*map[string]string))[newVal(key).String()] = newVal(va).String()
+			}
+		case *map[string]interface{}:
+			for key, va := range val {
+				(*receiver.(*map[string]interface{}))[newVal(key).String()] = va
+			}
+		default:
+			y.mapToStruct(val, receiver)
+		}
 	}
 }
 
@@ -126,20 +147,5 @@ func (y *Yaml) mapToStruct(m map[interface{}]interface{}, receiver interface{}) 
 }
 
 func (y *Yaml) setField(receiver interface{}, name string, value interface{}) error {
-	ref := reflect.TypeOf(receiver)
-	if ref.Elem().Kind() == reflect.Map {
-		m, ok := receiver.(*map[interface{}]interface{})
-		if ok {
-			(*m)[name] = value
-			return nil
-		}
-		m1, ok := receiver.(*map[string]interface{})
-		if ok {
-			(*m1)[name] = value
-			return nil
-		}
-		return errors.New("the receiver has type error")
-	} else {
-		return SetFieldValue(receiver, name, value)
-	}
+	return SetFieldValue(receiver, name, value)
 }

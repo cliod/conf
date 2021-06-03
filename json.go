@@ -23,7 +23,12 @@ func (j *Json) Load(filename string) error {
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		defer func() {
+			err = resp.Body.Close()
+			if err != nil {
+				wLog(err)
+			}
+		}()
 		bs, err = ioutil.ReadAll(resp.Body)
 	} else {
 		bs, err = ioutil.ReadFile(filename)
@@ -38,6 +43,11 @@ func (j *Json) Load(filename string) error {
 }
 
 func (j *Json) Value(name string) Variable {
+	var val interface{}
+	name = strings.Trim(name, " ")
+	if name == "" {
+		val = j.data
+	}
 	subKeys := strings.Split(name, ".")
 	data := j.data
 	for index, key := range subKeys {
@@ -49,13 +59,14 @@ func (j *Json) Value(name string) Variable {
 			break
 		}
 		if (index + 1) == len(subKeys) {
-			return newVal(value)
+			val = value
+			break
 		}
 		if reflect.TypeOf(value).Kind() == reflect.Map {
 			data = value.(map[string]interface{})
 		}
 	}
-	return nil
+	return newVal(val)
 }
 
 func (j *Json) GetValue(name string) interface{} {
@@ -79,7 +90,14 @@ func (j *Json) GetBool(name string) bool {
 }
 
 func (j *Json) Struct(name string, receiver interface{}) {
-	j.Value(name).Struct(receiver)
+	value := j.GetValue(name)
+	bs, err := json.Marshal(value)
+	if err != nil {
+		eLog(err)
+		return
+	}
+	err = json.Unmarshal(bs, receiver)
+	eLog(err)
 }
 
 func (j *Json) Convert(converter Converter) KindVariable {

@@ -1,9 +1,7 @@
 package conf
 
 import (
-	"errors"
 	"github.com/magiconair/properties"
-	"reflect"
 	"strings"
 )
 
@@ -61,8 +59,15 @@ func (p *Props) Struct(name string, receiver interface{}) {
 	if props.Len() > 0 {
 		for key, value := range props.Map() {
 			key = strings.TrimPrefix(key, name+".")
-			err := p.setField(receiver, key, value)
-			wLog(err)
+			switch receiver.(type) {
+			case *map[string]string:
+				(*receiver.(*map[string]string))[key] = value
+			case *map[string]interface{}:
+				(*receiver.(*map[string]interface{}))[key] = value
+			default:
+				err := p.setField(receiver, key, value)
+				wLog(err)
+			}
 		}
 	}
 }
@@ -80,20 +85,5 @@ func (p *Props) Json() *Json {
 }
 
 func (p *Props) setField(receiver interface{}, name string, value interface{}) error {
-	ref := reflect.TypeOf(receiver)
-	if ref.Elem().Kind() == reflect.Map {
-		m, ok := receiver.(*map[interface{}]interface{})
-		if ok {
-			(*m)[name] = value
-			return nil
-		}
-		m1, ok := receiver.(*map[string]interface{})
-		if ok {
-			(*m1)[name] = value
-			return nil
-		}
-		return errors.New("the receiver has type error")
-	} else {
-		return SetFieldValue(receiver, name, value)
-	}
+	return SetFieldValue(receiver, name, value)
 }
