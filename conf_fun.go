@@ -14,6 +14,14 @@ func Conf(params ...string) *Config {
 	return config
 }
 
+func Reload() error {
+	return Conf().Reload()
+}
+
+func Get(name string) interface{} {
+	return Conf().Get(name)
+}
+
 func GetString(name string) string {
 	return Conf().GetString(name)
 }

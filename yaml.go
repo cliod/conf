@@ -83,7 +83,7 @@ func (y *Yaml) Value(name string) Variable {
 	return newVal(val)
 }
 
-func (y *Yaml) GetValue(name string) interface{} {
+func (y *Yaml) Get(name string) interface{} {
 	return y.Value(name).Value()
 }
 

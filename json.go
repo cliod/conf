@@ -81,7 +81,7 @@ func (j *Json) Value(name string) Variable {
 	return newVal(val)
 }
 
-func (j *Json) GetValue(name string) interface{} {
+func (j *Json) Get(name string) interface{} {
 	return j.Value(name).Value()
 }
 

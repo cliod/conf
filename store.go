@@ -2,7 +2,7 @@ package conf
 
 type KindVariable interface {
 	Value(string) Variable
-	GetValue(string) interface{}
+	Get(string) interface{}
 	GetString(string) string
 	GetFloat(string) float64
 	GetInt(string) int

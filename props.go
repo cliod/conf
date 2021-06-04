@@ -38,7 +38,7 @@ func (p *Props) Value(name string) Variable {
 	return &Value{p.props.GetString(name, "")}
 }
 
-func (p *Props) GetValue(name string) interface{} {
+func (p *Props) Get(name string) interface{} {
 	return p.Value(name).Value()
 }
 

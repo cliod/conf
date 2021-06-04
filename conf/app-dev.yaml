@@ -1,0 +1,4 @@
+app:
+  default:
+    type: 2
+    name: json

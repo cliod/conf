@@ -1,4 +1,9 @@
+include: conf.yaml
 app:
+  include:
+    - name.yaml // all keys will be add prefix 'app.' in file name.yaml
+    - ignore.yaml // nonexistent file will be ignore
+  profile: dev
   name: conf
   author: cliod
   version: 1.0

@@ -2,43 +2,8 @@ package conf
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
-)
-
-type CType int
-
-func (t CType) String() string {
-	name, ok := CTypeNames[int(t)]
-	if ok {
-		return fmt.Sprint(name)
-	}
-	return "type" + strconv.Itoa(int(t))
-}
-
-const (
-	YAML CType = iota
-	PROPS
-	JSON
-
-	defPath = "conf/"
-	defName = "app.yaml"
-)
-
-var (
-	CTypeNames = map[interface{}]interface{}{
-		0:       "YAML",
-		"0":     0,
-		"YAML":  0,
-		1:       "PROPS",
-		"1":     1,
-		"PROPS": 1,
-		2:       "JSON",
-		"2":     2,
-		"JSON":  2,
-	}
 )
 
 type Config struct {
@@ -49,6 +14,8 @@ type Config struct {
 	isInit bool   // is initialized
 	cType  CType  // type of configuration file, default: yaml
 
+	includes []interface{}
+	profile  StoreVariable
 	// todo includes, profiles(cover)
 }
 
@@ -99,9 +66,15 @@ func newConf(dir, name string, ct CType) *Config {
 	}
 }
 
+func (c *Config) load() error {
+	err := c.store.Load(c.dir + c.name)
+	eLog(err)
+	return err
+}
+
 func (c *Config) initialize() {
 	if !c.isInit {
-		err := c.Load(c.dir + c.name)
+		err := c.load()
 		if err != nil {
 			panic(errors.New("no " + c.name + " in path: " + c.dir))
 		}
@@ -110,44 +83,37 @@ func (c *Config) initialize() {
 }
 
 func (c *Config) Variable() StoreVariable {
+	c.initialize()
 	return c.store
 }
 
-// Load supports reload configuration file
-func (c *Config) Load(filename string) error {
-	err := c.store.Load(filename)
-	eLog(err)
-	return err
+// Reload uses to reload configuration file.
+func (c *Config) Reload() error {
+	return c.load()
 }
 
 func (c *Config) Value(name string) Variable {
-	c.initialize()
-	return c.store.Value(name)
+	return c.Variable().Value(name)
 }
 
-func (c *Config) GetValue(name string) interface{} {
-	c.initialize()
-	return c.store.GetValue(name)
+func (c *Config) Get(name string) interface{} {
+	return c.Variable().Get(name)
 }
 
 func (c *Config) GetString(name string) string {
-	c.initialize()
-	return c.store.GetString(name)
+	return c.Variable().GetString(name)
 }
 
 func (c *Config) GetFloat(name string) float64 {
-	c.initialize()
-	return c.store.GetFloat(name)
+	return c.Variable().GetFloat(name)
 }
 
 func (c *Config) GetInt(name string) int {
-	c.initialize()
-	return c.store.GetInt(name)
+	return c.Variable().GetInt(name)
 }
 
 func (c *Config) GetBool(name string) bool {
-	c.initialize()
-	return c.store.GetBool(name)
+	return c.Variable().GetBool(name)
 }
 
 func (c *Config) Struct(name string, receiver interface{}) {
@@ -160,6 +126,5 @@ func (c *Config) Struct(name string, receiver interface{}) {
 		eLog(errors.New("the receiver must be a struct/map pointer type, kind: " + kind.String()))
 		return
 	}
-	c.initialize()
-	c.store.Struct(name, receiver)
+	c.Variable().Struct(name, receiver)
 }
