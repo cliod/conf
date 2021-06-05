@@ -18,8 +18,6 @@ type Variable interface {
 type ExtVariable interface {
 	Variable
 	Struct(interface{})
-	Slice() []interface{}
-	Map() map[interface{}]interface{}
 }
 
 type Value struct {
@@ -193,12 +191,4 @@ func (v *Value) mapToStruct(m map[interface{}]interface{}, receiver interface{})
 		}
 	}
 	return receiver
-}
-
-func (v *Value) Slice() []interface{} {
-	panic("no impl")
-}
-
-func (v *Value) Map() map[interface{}]interface{} {
-	panic("no impl")
 }
