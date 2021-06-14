@@ -12,5 +12,6 @@ type KindVariable interface {
 
 type StoreVariable interface {
 	KindVariable
+	Variable() Variable
 	Load(filename string) error
 }

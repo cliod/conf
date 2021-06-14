@@ -12,6 +12,8 @@ type AppInfo struct {
 }
 
 func TestConfig(t *testing.T) {
+	t.Log(conf.Reload())
+
 	t.Log(conf.GetString("app"))
 
 	t.Log(conf.GetInt("app.version"))
@@ -122,4 +124,9 @@ func TestProps(t *testing.T) {
 	props.Struct("app", &m)
 	t.Logf("%#v", info)
 	t.Logf("%#v", m)
+}
+
+func TestInclude(t *testing.T) {
+	t.Log(conf.Get("include"))
+	t.Log(conf.Get("app.include"))
 }

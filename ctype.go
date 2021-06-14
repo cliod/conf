@@ -3,12 +3,13 @@ package conf
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type CType int
 
 func (t CType) String() string {
-	name, ok := CTypeNames[int(t)]
+	name, ok := CTypeMapper[int(t)]
 	if ok {
 		return fmt.Sprint(name)
 	}
@@ -25,15 +26,27 @@ const (
 )
 
 var (
-	CTypeNames = map[interface{}]interface{}{
+	CTypeMapper = map[interface{}]interface{}{
+		YAML:    "YAML",
+		JSON:    "JSON",
+		PROPS:   "PROPS",
 		0:       "YAML",
-		"0":     0,
-		"YAML":  0,
 		1:       "PROPS",
-		"1":     1,
-		"PROPS": 1,
 		2:       "JSON",
+		"0":     0,
+		"1":     1,
 		"2":     2,
+		"YAML":  0,
+		"PROPS": 1,
 		"JSON":  2,
 	}
 )
+
+func getCType(filename string) CType {
+	extName := filename[strings.LastIndex(filename, ".")+1:]
+	code, ok := CTypeMapper[strings.ToUpper(extName)].(int)
+	if ok {
+		return CType(code)
+	}
+	return YAML
+}

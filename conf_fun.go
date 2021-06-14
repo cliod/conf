@@ -7,7 +7,7 @@ var (
 	config *Config
 )
 
-func Conf(params ...string) *Config {
+func Conf(params ...interface{}) *Config {
 	once.Do(func() {
 		config = New(params...)
 	})
