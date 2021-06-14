@@ -11,6 +11,7 @@ var (
 	p2j *Props2JsonConverter
 	j2y *Json2YamlConverter
 	j2p *Json2PropsConverter
+	m2j *Mixture2JsonConverter
 )
 
 type Convertable interface {
@@ -19,6 +20,17 @@ type Convertable interface {
 
 type Converter interface {
 	Convert(KindVariable) KindVariable
+}
+
+type Mixture2JsonConverter struct {
+}
+
+func (m *Mixture2JsonConverter) Convert(variable KindVariable) KindVariable {
+	mix, ok := variable.(*Mixture)
+	if !ok {
+		return new(Json)
+	}
+	return mix.data
 }
 
 type Yaml2PropsConverter struct {

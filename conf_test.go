@@ -32,16 +32,19 @@ func TestConfig(t *testing.T) {
 }
 
 func TestValue(t *testing.T) {
-	var converter conf.Converter = new(conf.Yaml2PropsConverter)
 	t.Log(conf.Conf().GetString("app"))
-	var variable = converter.Convert(conf.Conf().Variable())
+	mix := conf.Conf().Variable()
+	yaml := new(conf.Json2YamlConverter).Convert(new(conf.Mixture2JsonConverter).Convert(mix)).(*conf.Yaml)
+
+	var converter conf.Converter = new(conf.Yaml2PropsConverter)
+	var variable = converter.Convert(yaml)
 	props := variable.(*conf.Props)
 	t.Log("=========== yaml -> props ============")
 	t.Logf("%#v", props.Keys())
 
 	converter = new(conf.Props2YamlConverter)
 	variable = converter.Convert(variable)
-	yaml := variable.(*conf.Yaml)
+	yaml = variable.(*conf.Yaml)
 	t.Log("=========== props -> yaml ============")
 	t.Logf("%#v", yaml.Variable())
 

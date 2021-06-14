@@ -3,7 +3,7 @@ package conf
 import "reflect"
 
 type Mixture struct {
-	data Json
+	data *Json
 }
 
 func newMixture(variable StoreVariable, variables ...StoreVariable) *Mixture {
@@ -16,7 +16,7 @@ func newMixture(variable StoreVariable, variables ...StoreVariable) *Mixture {
 		value := store.Variable().Value()
 		push(m, value, false)
 	}
-	return &Mixture{Json{m}}
+	return &Mixture{&Json{m}}
 }
 
 func push(m map[string]interface{}, value interface{}, replace bool) {
