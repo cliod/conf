@@ -1,2 +1,3 @@
-conf:
-  name: conf
+app:
+  conf:
+    name: conf

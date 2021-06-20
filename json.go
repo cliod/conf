@@ -12,16 +12,15 @@ type Json struct {
 	data map[string]interface{}
 }
 
-// Keys returns root keys
-func (j *Json) Keys() (keys []string) {
-	for key := range j.data {
-		keys = append(keys, key)
-	}
-	return
-}
-
 func (j *Json) Variable() Variable {
 	return newVal(j.data)
+}
+
+func (j *Json) LoadBytes(data []byte) error {
+	j.data = make(map[string]interface{})
+	err := json.Unmarshal(data, &j.data)
+	eLog(err)
+	return err
 }
 
 func (j *Json) Load(filename string) error {
@@ -48,10 +47,7 @@ func (j *Json) Load(filename string) error {
 	if err != nil {
 		return err
 	}
-	j.data = make(map[string]interface{})
-	err = json.Unmarshal(bs, &j.data)
-	eLog(err)
-	return err
+	return j.LoadBytes(bs)
 }
 
 func (j *Json) Value(name string) Variable {
@@ -125,14 +121,6 @@ func (j *Json) Struct(name string, receiver interface{}) {
 	eLog(err)
 }
 
-func (j *Json) Convert(converter Converter) KindVariable {
+func (j *Json) Convert(converter Converter) KeyVariable {
 	return converter.Convert(j)
-}
-
-func (j *Json) Props() *Props {
-	return j.Convert(j2p).(*Props)
-}
-
-func (j *Json) Yaml() *Yaml {
-	return j.Convert(j2y).(*Yaml)
 }

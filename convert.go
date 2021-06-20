@@ -5,27 +5,22 @@ import (
 )
 
 var (
-	y2p *Yaml2PropsConverter
 	y2j *Yaml2JsonConverter
-	p2y *Props2YamlConverter
 	p2j *Props2JsonConverter
-	j2y *Json2YamlConverter
-	j2p *Json2PropsConverter
-	m2j *Mixture2JsonConverter
 )
 
 type Convertable interface {
-	Convert(Converter) KindVariable
+	Convert(Converter) KeyVariable
 }
 
 type Converter interface {
-	Convert(KindVariable) KindVariable
+	Convert(KeyVariable) KeyVariable
 }
 
 type Mixture2JsonConverter struct {
 }
 
-func (m *Mixture2JsonConverter) Convert(variable KindVariable) KindVariable {
+func (m *Mixture2JsonConverter) Convert(variable KeyVariable) KeyVariable {
 	mix, ok := variable.(*Mixture)
 	if !ok {
 		return new(Json)
@@ -36,13 +31,13 @@ func (m *Mixture2JsonConverter) Convert(variable KindVariable) KindVariable {
 type Yaml2PropsConverter struct {
 }
 
-func (conv *Yaml2PropsConverter) Convert(variable KindVariable) KindVariable {
+func (conv *Yaml2PropsConverter) Convert(variable KeyVariable) KeyVariable {
 	yaml, ok := variable.(*Yaml)
 	props := new(Props)
 	if !ok {
 		return props
 	}
-	err := props.loadMap(conv.yaml2Props("", yaml.data))
+	err := props.LoadMap(conv.yaml2Props("", yaml.data))
 	eLog(err)
 	return props
 }
@@ -70,7 +65,7 @@ func (conv *Yaml2PropsConverter) yaml2Props(preKey string, data map[interface{}]
 type Props2YamlConverter struct {
 }
 
-func (conv *Props2YamlConverter) Convert(variable KindVariable) KindVariable {
+func (conv *Props2YamlConverter) Convert(variable KeyVariable) KeyVariable {
 	props, ok := variable.(*Props)
 	yaml := new(Yaml)
 	if !ok {
@@ -108,7 +103,7 @@ func (conv *Props2YamlConverter) props2Yaml(data map[string]string, levelRes map
 type Yaml2JsonConverter struct {
 }
 
-func (conv *Yaml2JsonConverter) Convert(variable KindVariable) KindVariable {
+func (conv *Yaml2JsonConverter) Convert(variable KeyVariable) KeyVariable {
 	yaml, ok := variable.(*Yaml)
 	json := new(Json)
 	if !ok {
@@ -134,7 +129,7 @@ func (conv *Yaml2JsonConverter) yaml2Json(data map[interface{}]interface{}) (res
 type Json2YamlConverter struct {
 }
 
-func (conv *Json2YamlConverter) Convert(variable KindVariable) KindVariable {
+func (conv *Json2YamlConverter) Convert(variable KeyVariable) KeyVariable {
 	json, ok := variable.(*Json)
 	yaml := new(Yaml)
 	if !ok {
@@ -160,13 +155,13 @@ func (conv *Json2YamlConverter) json2Yaml(data map[string]interface{}) (res map[
 type Json2PropsConverter struct {
 }
 
-func (conv *Json2PropsConverter) Convert(variable KindVariable) KindVariable {
+func (conv *Json2PropsConverter) Convert(variable KeyVariable) KeyVariable {
 	json, ok := variable.(*Json)
 	props := new(Props)
 	if !ok {
 		return props
 	}
-	err := props.loadMap(conv.json2Props("", json.data))
+	err := props.LoadMap(conv.json2Props("", json.data))
 	eLog(err)
 	return props
 }
@@ -194,7 +189,7 @@ func (conv *Json2PropsConverter) json2Props(preKey string, data map[string]inter
 type Props2JsonConverter struct {
 }
 
-func (conv *Props2JsonConverter) Convert(variable KindVariable) KindVariable {
+func (conv *Props2JsonConverter) Convert(variable KeyVariable) KeyVariable {
 	props, ok := variable.(*Props)
 	json := new(Json)
 	if !ok {

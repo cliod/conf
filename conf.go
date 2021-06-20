@@ -50,7 +50,7 @@ func New(params ...interface{}) *Config {
 		}
 	}
 	if strings.Trim(confDir, " ") == "" || confDir[0] != '/' || confDir[1] != ':' {
-		confDir = rootPath() + defPath
+		confDir = RootPath() + defPath
 	}
 	if strings.Trim(confName, " ") == "" {
 		confName = defName
@@ -86,9 +86,6 @@ func newStore(ct CType) StoreVariable {
 }
 
 func (c *Config) loadIncludes() error {
-	// get all includes
-	// new store
-	// load file
 	var paths []string
 	rootInclude := c.store.Get("include")
 	appInclude := c.store.Get("app.include")
@@ -118,8 +115,12 @@ func (c *Config) toSlice(path interface{}) []string {
 	}
 }
 
+func (c *Config) GetProfile() string {
+	return c.store.GetString("app.profile")
+}
+
 func (c *Config) loadProfile() error {
-	appProfile := c.store.Get("app.profile")
+	appProfile := c.GetProfile()
 	c.profile = newStore(c.cType)
 	return c.profile.Load(fmt.Sprintf("%s%s-%s.%s", c.dir, c.name[:strings.LastIndex(c.name, ".")], appProfile, strings.ToLower(c.cType.String())))
 }

@@ -9,12 +9,12 @@ type Props struct {
 	props *properties.Properties
 }
 
-func (p *Props) loadMap(data map[string]string) (err error) {
+func (p *Props) LoadMap(data map[string]string) (err error) {
 	p.props = properties.LoadMap(data)
 	return
 }
 
-func (p *Props) loadByte(data []byte) (err error) {
+func (p *Props) LoadBytes(data []byte) (err error) {
 	p.props, err = properties.Load(data, properties.UTF8)
 	return
 }
@@ -83,24 +83,12 @@ func (p *Props) Struct(name string, receiver interface{}) {
 		case *map[string]interface{}:
 			(*receiver.(*map[string]interface{}))[key] = value
 		default:
-			err := p.setField(receiver, key, value)
+			err := SetFieldValue(receiver, key, value)
 			wLog(err)
 		}
 	}
 }
 
-func (p *Props) Convert(converter Converter) KindVariable {
+func (p *Props) Convert(converter Converter) KeyVariable {
 	return converter.Convert(p)
-}
-
-func (p *Props) Yaml() *Yaml {
-	return p.Convert(p2y).(*Yaml)
-}
-
-func (p *Props) Json() *Json {
-	return p.Convert(p2j).(*Json)
-}
-
-func (p *Props) setField(receiver interface{}, name string, value interface{}) error {
-	return SetFieldValue(receiver, name, value)
 }

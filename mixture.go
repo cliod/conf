@@ -1,14 +1,18 @@
 package conf
 
-import "reflect"
+import (
+	"errors"
+	"reflect"
+	"strings"
+)
 
 type Mixture struct {
 	data *Json
 }
 
 func newMixture(variable StoreVariable, variables ...StoreVariable) *Mixture {
-	if variables == nil || len(variables) == 0 {
-		variables = []StoreVariable{}
+	if variables == nil {
+		variables = append([]StoreVariable{})
 	}
 	variables = append(variables, variable)
 	m := make(map[string]interface{})
@@ -33,7 +37,7 @@ func push(m map[string]interface{}, value interface{}, replace bool) {
 	for k, v := range data {
 		val, exist := m[k]
 		if replace {
-			if reflect.TypeOf(val).Kind() != reflect.Map {
+			if val == nil || reflect.TypeOf(val).Kind() != reflect.Map {
 				m[k] = v
 			} else {
 				push(val.(map[string]interface{}), v, true)
@@ -83,5 +87,27 @@ func (m *Mixture) Struct(name string, receiver interface{}) {
 }
 
 func (m *Mixture) Load(filename string) error {
-	return m.data.Load(filename)
+	extName := filename[:strings.LastIndex(filename, ".")]
+	switch strings.ToLower(extName) {
+	case "json":
+		return m.data.Load(filename)
+	case "yaml", "yml":
+		y := new(Yaml)
+		err := y.Load(filename)
+		if err != nil {
+			return err
+		}
+		m.data = y.Convert(y2j).(*Json)
+		return nil
+	case "properties", "conf":
+		p := new(Props)
+		err := p.Load(filename)
+		if err != nil {
+			return err
+		}
+		m.data = p.Convert(p2j).(*Json)
+		return nil
+	default:
+		return errors.New("file format does not match")
+	}
 }

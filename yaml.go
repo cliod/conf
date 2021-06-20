@@ -2,28 +2,27 @@ package conf
 
 import (
 	"encoding/json"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 type Yaml struct {
 	data map[interface{}]interface{}
 }
 
-// Keys returns root keys
-func (y *Yaml) Keys() (keys []string) {
-	for key := range y.data {
-		var vKey = &Value{key}
-		keys = append(keys, vKey.String())
-	}
-	return
-}
-
 func (y *Yaml) Variable() Variable {
 	return newVal(y.data)
+}
+
+func (y *Yaml) LoadBytes(data []byte) (err error) {
+	y.data = make(map[interface{}]interface{})
+	err = yaml.Unmarshal(data, &y.data)
+	eLog(err)
+	return err
 }
 
 func (y *Yaml) Load(filename string) error {
@@ -50,10 +49,7 @@ func (y *Yaml) Load(filename string) error {
 	if err != nil {
 		return err
 	}
-	y.data = make(map[interface{}]interface{})
-	err = yaml.Unmarshal(bs, &y.data)
-	eLog(err)
-	return err
+	return y.LoadBytes(bs)
 }
 
 func (y *Yaml) Value(name string) Variable {
@@ -127,14 +123,6 @@ func (y *Yaml) Struct(name string, receiver interface{}) {
 	eLog(err)
 }
 
-func (y *Yaml) Convert(converter Converter) KindVariable {
+func (y *Yaml) Convert(converter Converter) KeyVariable {
 	return converter.Convert(y)
-}
-
-func (y *Yaml) Props() *Props {
-	return y.Convert(y2p).(*Props)
-}
-
-func (y *Yaml) Json() *Json {
-	return y.Convert(y2j).(*Json)
 }

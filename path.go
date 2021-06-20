@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// rootPath return project root path
-func rootPath() (path string) {
+// RootPath return project root path
+func RootPath() (path string) {
 	// default linux/mac os
 	var (
 		sp = "/"
